@@ -1,0 +1,70 @@
+{
+  "appTitle": "Pangolock Calculator",
+  "@appTitle": {
+    "description": "The title of the application"
+  },
+  "standardMode": "Standard",
+  "@standardMode": {
+    "description": "Standard calculator mode"
+  },
+  "scientificMode": "Scientific",
+  "@scientificMode": {
+    "description": "Scientific calculator mode"
+  },
+  "mode": "Mode",
+  "@mode": {
+    "description": "Calculator mode"
+  },
+  "settings": "Settings",
+  "@settings": {
+    "description": "Settings menu item"
+  },
+  "language": "Language",
+  "@language": {
+    "description": "Language setting"
+  },
+  "theme": "Theme",
+  "@theme": {
+    "description": "Theme setting"
+  },
+  "light": "Light",
+  "@light": {
+    "description": "Light theme"
+  },
+  "dark": "Dark",
+  "@dark": {
+    "description": "Dark theme"
+  },
+  "system": "System",
+  "@system": {
+    "description": "System theme"
+  },
+  "about": "About",
+  "@about": {
+    "description": "About menu item"
+  },
+  "version": "Version",
+  "@version": {
+    "description": "Version label"
+  },
+  "appDescription": "An advanced calculator with powerful features.",
+  "@appDescription": {
+    "description": "Application description"
+  },
+  "license": "GPL v3.0 LICENSE",
+  "@license": {
+    "description": "License information"
+  },
+  "clear": "Clear",
+  "@clear": {
+    "description": "Clear button"
+  },
+  "backspace": "Backspace",
+  "@backspace": {
+    "description": "Backspace button"
+  },
+  "equals": "Equals",
+  "@equals": {
+    "description": "Equals button"
+  }
+}

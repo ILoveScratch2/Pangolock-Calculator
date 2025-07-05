@@ -1,0 +1,19 @@
+{
+  "appTitle": "Pangolock 计算器",
+  "standardMode": "标准",
+  "scientificMode": "科学",
+  "mode": "模式",
+  "settings": "设置",
+  "language": "语言",
+  "theme": "主题",
+  "light": "浅色",
+  "dark": "深色",
+  "system": "跟随系统",
+  "about": "关于",
+  "version": "版本",
+  "appDescription": "功能强大的高级计算器。",
+  "license": "GPL v3.0 许可证",
+  "clear": "清除",
+  "backspace": "退格",
+  "equals": "等于"
+}
