@@ -1,9 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:math' as math;
+import 'calculator_mode.dart';
+import 'expression_evaluator.dart';
 
 class ScientificCalculator extends StatefulWidget {
-  const ScientificCalculator({super.key});
+  final CalculationMode calculationMode;
+
+  const ScientificCalculator({
+    super.key,
+    required this.calculationMode,
+  });
 
   @override
   State<ScientificCalculator> createState() => _ScientificCalculatorState();
@@ -12,6 +19,7 @@ class ScientificCalculator extends StatefulWidget {
 class _ScientificCalculatorState extends State<ScientificCalculator> {
   String _display = '0';
   String _expression = '';
+  String _logicExpression = ''; // For logic mode
   double _result = 0;
   String _operation = '';
   double _operand = 0;
@@ -21,14 +29,34 @@ class _ScientificCalculatorState extends State<ScientificCalculator> {
 
   void _onNumberPressed(String number) {
     setState(() {
-      if (_waitingForOperand) {
-        _display = number;
-        _waitingForOperand = false;
-        _hasDecimal = false;
+      if (widget.calculationMode == CalculationMode.logic) {
+        // Logic mode: handle number input for expression building
+        if (_waitingForOperand || _display == '0') {
+          _display = number;
+          _waitingForOperand = false;
+        } else {
+          _display = _display + number;
+        }
+        _hasDecimal = _display.contains('.');
+
+        // Update expression display
+        if (_logicExpression.isNotEmpty) {
+          String tempExpression = _logicExpression + _display;
+          _expression = tempExpression;
+        } else {
+          _expression = '';
+        }
       } else {
-        _display = _display == '0' ? number : _display + number;
+        // Classic mode: existing behavior
+        if (_waitingForOperand) {
+          _display = number;
+          _waitingForOperand = false;
+          _hasDecimal = false;
+        } else {
+          _display = _display == '0' ? number : _display + number;
+        }
+        _expression = _expression.replaceAll('=', '');
       }
-      _expression = _expression.replaceAll('=', '');
     });
   }
 
@@ -42,23 +70,45 @@ class _ScientificCalculatorState extends State<ScientificCalculator> {
         _display += '.';
         _hasDecimal = true;
       }
+
+      // Update expression for logic mode
+      if (widget.calculationMode == CalculationMode.logic) {
+        if (_logicExpression.isNotEmpty) {
+          String tempExpression = _logicExpression + _display;
+          _expression = tempExpression;
+        }
+      }
     });
   }
 
   void _onOperationPressed(String operation) {
     setState(() {
-      if (_operation.isNotEmpty && !_waitingForOperand) {
-        _calculate();
+      if (widget.calculationMode == CalculationMode.logic) {
+        // Logic mode: build expression string without calculating
+        if (_logicExpression.isEmpty) {
+          _logicExpression = _display;
+        } else if (!_waitingForOperand) {
+          _logicExpression += _display;
+        }
+        _logicExpression += ' $operation ';
+        _expression = _logicExpression;
+        _waitingForOperand = true;
+        _hasDecimal = false;
       } else {
-        _result = double.parse(_display);
+        // Classic mode: existing behavior
+        if (_operation.isNotEmpty && !_waitingForOperand) {
+          _calculate();
+        } else {
+          _result = double.parse(_display);
+        }
+
+        _operation = operation;
+        _operand = _result;
+        _waitingForOperand = true;
+        _hasDecimal = false;
+
+        _expression = '${_formatNumber(_result)} $operation ';
       }
-      
-      _operation = operation;
-      _operand = _result;
-      _waitingForOperand = true;
-      _hasDecimal = false;
-      
-      _expression = '${_formatNumber(_result)} $operation ';
     });
   }
 
@@ -157,13 +207,37 @@ class _ScientificCalculatorState extends State<ScientificCalculator> {
 
   void _onEqualsPressed() {
     setState(() {
-      if (_operation.isNotEmpty && !_waitingForOperand) {
-        _expression += '${_formatNumber(double.parse(_display))} = ';
-        _calculate();
-        _expression += _formatNumber(_result);
-        _operation = '';
-        _waitingForOperand = true;
-        _hasDecimal = _display.contains('.');
+      if (widget.calculationMode == CalculationMode.logic) {
+        // Logic mode: evaluate complete expression
+        if (_logicExpression.isNotEmpty) {
+          String completeExpression = _logicExpression;
+          if (!_waitingForOperand) {
+            completeExpression += _display;
+          }
+
+          try {
+            _result = ExpressionEvaluator.evaluate(completeExpression);
+            _expression = '$completeExpression = ${_formatNumber(_result)}';
+            _display = _formatNumber(_result);
+            _logicExpression = '';
+            _waitingForOperand = true;
+            _hasDecimal = _display.contains('.');
+          } catch (e) {
+            _display = 'Error';
+            _expression = 'Error';
+            _logicExpression = '';
+          }
+        }
+      } else {
+        // Classic mode: existing behavior
+        if (_operation.isNotEmpty && !_waitingForOperand) {
+          _expression += '${_formatNumber(double.parse(_display))} = ';
+          _calculate();
+          _expression += _formatNumber(_result);
+          _operation = '';
+          _waitingForOperand = true;
+          _hasDecimal = _display.contains('.');
+        }
       }
     });
   }
@@ -172,6 +246,7 @@ class _ScientificCalculatorState extends State<ScientificCalculator> {
     setState(() {
       _display = '0';
       _expression = '';
+      _logicExpression = '';
       _result = 0;
       _operation = '';
       _operand = 0;

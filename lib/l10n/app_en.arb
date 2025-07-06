@@ -55,6 +55,26 @@
   "@license": {
     "description": "License information"
   },
+  "calculationMode": "Calculation Mode",
+  "@calculationMode": {
+    "description": "Calculation mode setting"
+  },
+  "classicMode": "Classic",
+  "@classicMode": {
+    "description": "Classic calculation mode"
+  },
+  "logicMode": "Logic",
+  "@logicMode": {
+    "description": "Logic calculation mode"
+  },
+  "classicModeDescription": "Calculate step by step, no operator precedence",
+  "@classicModeDescription": {
+    "description": "Description of classic calculation mode"
+  },
+  "logicModeDescription": "Store expression and calculate with operator precedence when equals is pressed",
+  "@logicModeDescription": {
+    "description": "Description of logic calculation mode"
+  },
   "clear": "Clear",
   "@clear": {
     "description": "Clear button"

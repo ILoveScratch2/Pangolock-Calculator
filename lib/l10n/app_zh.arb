@@ -13,6 +13,11 @@
   "version": "版本",
   "appDescription": "功能强大的高级计算器。",
   "license": "GPL v3.0 许可证",
+  "calculationMode": "计算模式",
+  "classicMode": "经典",
+  "logicMode": "逻辑",
+  "classicModeDescription": "按步计算，无运算优先级",
+  "logicModeDescription": "存储表达式，按等号时遵循运算优先级计算",
   "clear": "清除",
   "backspace": "退格",
   "equals": "等于"

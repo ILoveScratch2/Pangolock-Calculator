@@ -4,6 +4,8 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'calculator_mode.dart';
 import 'scientific_calculator.dart';
+import 'settings_page.dart';
+import 'expression_evaluator.dart';
 
 void main() {
   runApp(const PangoCalcApp());
@@ -19,6 +21,7 @@ class PangoCalcApp extends StatefulWidget {
 class _PangoCalcAppState extends State<PangoCalcApp> {
   Locale _locale = const Locale('en');
   ThemeMode _themeMode = ThemeMode.system;
+  CalculationMode _calculationMode = CalculationMode.classic;
 
   void _changeLocale(Locale locale) {
     setState(() {
@@ -29,6 +32,12 @@ class _PangoCalcAppState extends State<PangoCalcApp> {
   void _changeThemeMode(ThemeMode themeMode) {
     setState(() {
       _themeMode = themeMode;
+    });
+  }
+
+  void _changeCalculationMode(CalculationMode calculationMode) {
+    setState(() {
+      _calculationMode = calculationMode;
     });
   }
 
@@ -73,8 +82,10 @@ class _PangoCalcAppState extends State<PangoCalcApp> {
       home: CalculatorScreen(
         onLocaleChange: _changeLocale,
         onThemeModeChange: _changeThemeMode,
+        onCalculationModeChange: _changeCalculationMode,
         currentLocale: _locale,
         currentThemeMode: _themeMode,
+        currentCalculationMode: _calculationMode,
       ),
       debugShowCheckedModeBanner: false,
     );
@@ -84,15 +95,19 @@ class _PangoCalcAppState extends State<PangoCalcApp> {
 class CalculatorScreen extends StatefulWidget {
   final Function(Locale) onLocaleChange;
   final Function(ThemeMode) onThemeModeChange;
+  final Function(CalculationMode) onCalculationModeChange;
   final Locale currentLocale;
   final ThemeMode currentThemeMode;
+  final CalculationMode currentCalculationMode;
 
   const CalculatorScreen({
     super.key,
     required this.onLocaleChange,
     required this.onThemeModeChange,
+    required this.onCalculationModeChange,
     required this.currentLocale,
     required this.currentThemeMode,
+    required this.currentCalculationMode,
   });
 
   @override
@@ -103,6 +118,7 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
   CalculatorMode _currentMode = CalculatorMode.standard;
   String _display = '0';
   String _expression = '';
+  String _logicExpression = ''; // For logic mode
   double _result = 0;
   String _operation = '';
   double _operand = 0;
@@ -111,14 +127,36 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
 
   void _onNumberPressed(String number) {
     setState(() {
-      if (_waitingForOperand) {
-        _display = number;
-        _waitingForOperand = false;
-        _hasDecimal = false;
+      if (widget.currentCalculationMode == CalculationMode.logic) {
+        // Logic mode: handle number input for expression building
+        if (_waitingForOperand || _display == '0') {
+          _display = number;
+          _waitingForOperand = false;
+        } else {
+          _display = _display + number;
+        }
+        _hasDecimal = _display.contains('.');
+
+        // Update expression display to show what's being built
+        if (_logicExpression.isNotEmpty) {
+          // Show the building expression
+          String tempExpression = _logicExpression + _display;
+          _expression = tempExpression;
+        } else {
+          // First number, clear expression
+          _expression = '';
+        }
       } else {
-        _display = _display == '0' ? number : _display + number;
+        // Classic mode: existing behavior
+        if (_waitingForOperand) {
+          _display = number;
+          _waitingForOperand = false;
+          _hasDecimal = false;
+        } else {
+          _display = _display == '0' ? number : _display + number;
+        }
+        _expression = _expression.replaceAll('=', '');
       }
-      _expression = _expression.replaceAll('=', '');
     });
   }
 
@@ -132,23 +170,46 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
         _display += '.';
         _hasDecimal = true;
       }
+
+      // Update expression for logic mode
+      if (widget.currentCalculationMode == CalculationMode.logic) {
+        if (_logicExpression.isNotEmpty) {
+          String tempExpression = _logicExpression + _display;
+          _expression = tempExpression;
+        }
+      }
     });
   }
 
   void _onOperationPressed(String operation) {
     setState(() {
-      if (_operation.isNotEmpty && !_waitingForOperand) {
-        _calculate();
+      if (widget.currentCalculationMode == CalculationMode.logic) {
+        // Logic mode: build expression string without calculating
+        if (_logicExpression.isEmpty) {
+          _logicExpression = _display;
+        } else if (!_waitingForOperand) {
+          _logicExpression += _display;
+        }
+        _logicExpression += ' $operation ';
+        _expression = _logicExpression;
+        _waitingForOperand = true;
+        _hasDecimal = false;
+        // Don't change _display in logic mode - keep showing current number
       } else {
-        _result = double.parse(_display);
+        // Classic mode: existing behavior
+        if (_operation.isNotEmpty && !_waitingForOperand) {
+          _calculate();
+        } else {
+          _result = double.parse(_display);
+        }
+
+        _operation = operation;
+        _operand = _result;
+        _waitingForOperand = true;
+        _hasDecimal = false;
+
+        _expression = '${_formatNumber(_result)} $operation ';
       }
-
-      _operation = operation;
-      _operand = _result;
-      _waitingForOperand = true;
-      _hasDecimal = false;
-
-      _expression = '${_formatNumber(_result)} $operation ';
     });
   }
 
@@ -181,13 +242,37 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
 
   void _onEqualsPressed() {
     setState(() {
-      if (_operation.isNotEmpty && !_waitingForOperand) {
-        _expression += '${_formatNumber(double.parse(_display))} = ';
-        _calculate();
-        _expression += _formatNumber(_result);
-        _operation = '';
-        _waitingForOperand = true;
-        _hasDecimal = _display.contains('.');
+      if (widget.currentCalculationMode == CalculationMode.logic) {
+        // Logic mode: evaluate complete expression
+        if (_logicExpression.isNotEmpty) {
+          String completeExpression = _logicExpression;
+          if (!_waitingForOperand) {
+            completeExpression += _display;
+          }
+
+          try {
+            _result = ExpressionEvaluator.evaluate(completeExpression);
+            _expression = '$completeExpression = ${_formatNumber(_result)}';
+            _display = _formatNumber(_result);
+            _logicExpression = '';
+            _waitingForOperand = true;
+            _hasDecimal = _display.contains('.');
+          } catch (e) {
+            _display = 'Error';
+            _expression = 'Error';
+            _logicExpression = '';
+          }
+        }
+      } else {
+        // Classic mode: existing behavior
+        if (_operation.isNotEmpty && !_waitingForOperand) {
+          _expression += '${_formatNumber(double.parse(_display))} = ';
+          _calculate();
+          _expression += _formatNumber(_result);
+          _operation = '';
+          _waitingForOperand = true;
+          _hasDecimal = _display.contains('.');
+        }
       }
     });
   }
@@ -196,6 +281,7 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
     setState(() {
       _display = '0';
       _expression = '';
+      _logicExpression = '';
       _result = 0;
       _operation = '';
       _operand = 0;
@@ -242,7 +328,7 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
       drawer: _buildDrawer(context, localizations),
       body: _currentMode == CalculatorMode.standard
         ? _buildStandardCalculator(context, theme, colorScheme)
-        : const ScientificCalculator(),
+        : ScientificCalculator(calculationMode: widget.currentCalculationMode),
     );
   }
 
@@ -405,26 +491,33 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
               ? localizations.standardMode
               : localizations.scientificMode),
             onTap: () {
-              _showModeDialog(context, localizations);
+              setState(() {
+                _currentMode = _currentMode == CalculatorMode.standard
+                    ? CalculatorMode.scientific
+                    : CalculatorMode.standard;
+              });
+              Navigator.of(context).pop();
             },
           ),
           const Divider(),
-          // Language selection
+          // Settings
           ListTile(
-            leading: const Icon(Icons.language),
-            title: Text(localizations.language),
-            subtitle: Text(widget.currentLocale.languageCode == 'zh' ? '中文' : 'English'),
+            leading: const Icon(Icons.settings),
+            title: Text(localizations.settings),
             onTap: () {
-              _showLanguageDialog(context, localizations);
-            },
-          ),
-          // Theme selection
-          ListTile(
-            leading: const Icon(Icons.palette),
-            title: Text(localizations.theme),
-            subtitle: Text(_getThemeModeText(localizations)),
-            onTap: () {
-              _showThemeDialog(context, localizations);
+              Navigator.of(context).pop();
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => SettingsPage(
+                    onLocaleChange: widget.onLocaleChange,
+                    onThemeModeChange: widget.onThemeModeChange,
+                    onCalculationModeChange: widget.onCalculationModeChange,
+                    currentLocale: widget.currentLocale,
+                    currentThemeMode: widget.currentThemeMode,
+                    currentCalculationMode: widget.currentCalculationMode,
+                  ),
+                ),
+              );
             },
           ),
           const Divider(),
@@ -441,154 +534,16 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
     );
   }
 
-  String _getThemeModeText(AppLocalizations localizations) {
-    switch (widget.currentThemeMode) {
-      case ThemeMode.light:
-        return localizations.light;
-      case ThemeMode.dark:
-        return localizations.dark;
-      case ThemeMode.system:
-        return localizations.system;
-    }
-  }
 
-  void _showModeDialog(BuildContext context, AppLocalizations localizations) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text(localizations.mode),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              RadioListTile<CalculatorMode>(
-                title: Text(localizations.standardMode),
-                value: CalculatorMode.standard,
-                groupValue: _currentMode,
-                onChanged: (CalculatorMode? value) {
-                  if (value != null) {
-                    setState(() {
-                      _currentMode = value;
-                    });
-                    Navigator.of(context).pop();
-                  }
-                },
-              ),
-              RadioListTile<CalculatorMode>(
-                title: Text(localizations.scientificMode),
-                value: CalculatorMode.scientific,
-                groupValue: _currentMode,
-                onChanged: (CalculatorMode? value) {
-                  if (value != null) {
-                    setState(() {
-                      _currentMode = value;
-                    });
-                    Navigator.of(context).pop();
-                  }
-                },
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  void _showLanguageDialog(BuildContext context, AppLocalizations localizations) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text(localizations.language),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              RadioListTile<Locale>(
-                title: const Text('English'),
-                value: const Locale('en'),
-                groupValue: widget.currentLocale,
-                onChanged: (Locale? value) {
-                  if (value != null) {
-                    widget.onLocaleChange(value);
-                    Navigator.of(context).pop();
-                  }
-                },
-              ),
-              RadioListTile<Locale>(
-                title: const Text('中文'),
-                value: const Locale('zh'),
-                groupValue: widget.currentLocale,
-                onChanged: (Locale? value) {
-                  if (value != null) {
-                    widget.onLocaleChange(value);
-                    Navigator.of(context).pop();
-                  }
-                },
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  void _showThemeDialog(BuildContext context, AppLocalizations localizations) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text(localizations.theme),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              RadioListTile<ThemeMode>(
-                title: Text(localizations.light),
-                value: ThemeMode.light,
-                groupValue: widget.currentThemeMode,
-                onChanged: (ThemeMode? value) {
-                  if (value != null) {
-                    widget.onThemeModeChange(value);
-                    Navigator.of(context).pop();
-                  }
-                },
-              ),
-              RadioListTile<ThemeMode>(
-                title: Text(localizations.dark),
-                value: ThemeMode.dark,
-                groupValue: widget.currentThemeMode,
-                onChanged: (ThemeMode? value) {
-                  if (value != null) {
-                    widget.onThemeModeChange(value);
-                    Navigator.of(context).pop();
-                  }
-                },
-              ),
-              RadioListTile<ThemeMode>(
-                title: Text(localizations.system),
-                value: ThemeMode.system,
-                groupValue: widget.currentThemeMode,
-                onChanged: (ThemeMode? value) {
-                  if (value != null) {
-                    widget.onThemeModeChange(value);
-                    Navigator.of(context).pop();
-                  }
-                },
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
 
   void _showAboutDialog(BuildContext context, AppLocalizations localizations) {
     showAboutDialog(
       context: context,
       applicationName: localizations.appTitle,
-      applicationVersion: '0.2.0',
+      applicationVersion: '0.2.1',
       applicationIcon: const Icon(Icons.calculate, size: 48),
       children: [
-        Text('${localizations.version}: 0.2.0'),
+        Text('${localizations.version}: 0.2.1'),
         const SizedBox(height: 16),
         Text(localizations.appDescription),
         const SizedBox(height: 8),
