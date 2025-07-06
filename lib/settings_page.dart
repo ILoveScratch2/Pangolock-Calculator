@@ -6,18 +6,22 @@ class SettingsPage extends StatelessWidget {
   final Function(Locale) onLocaleChange;
   final Function(ThemeMode) onThemeModeChange;
   final Function(CalculationMode) onCalculationModeChange;
+  final Function(bool) onMemoryKeysEnabledChange;
   final Locale currentLocale;
   final ThemeMode currentThemeMode;
   final CalculationMode currentCalculationMode;
+  final bool memoryKeysEnabled;
 
   const SettingsPage({
     super.key,
     required this.onLocaleChange,
     required this.onThemeModeChange,
     required this.onCalculationModeChange,
+    required this.onMemoryKeysEnabledChange,
     required this.currentLocale,
     required this.currentThemeMode,
     required this.currentCalculationMode,
+    required this.memoryKeysEnabled,
   });
 
   @override
@@ -76,7 +80,35 @@ class SettingsPage extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
-          
+
+          // Memory Keys Section
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    localizations.memoryKeys,
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      color: colorScheme.primary,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  SwitchListTile(
+                    title: Text(localizations.memoryKeys),
+                    subtitle: Text(localizations.memoryKeysDescription),
+                    value: memoryKeysEnabled,
+                    onChanged: (bool value) {
+                      onMemoryKeysEnabledChange(value);
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+
           // Language Section
           Card(
             child: Padding(

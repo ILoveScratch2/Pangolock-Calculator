@@ -18,6 +18,8 @@
   "logicMode": "逻辑",
   "classicModeDescription": "按步计算，无运算优先级",
   "logicModeDescription": "存储表达式，按等号时遵循运算优先级计算",
+  "memoryKeys": "存储按键",
+  "memoryKeysDescription": "显示 M+、M-、MR、MC 存储功能按键",
   "clear": "清除",
   "backspace": "退格",
   "equals": "等于"

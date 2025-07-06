@@ -75,6 +75,14 @@
   "@logicModeDescription": {
     "description": "Description of logic calculation mode"
   },
+  "memoryKeys": "Memory Keys",
+  "@memoryKeys": {
+    "description": "Memory keys setting"
+  },
+  "memoryKeysDescription": "Show M+, M-, MR, MC memory function buttons",
+  "@memoryKeysDescription": {
+    "description": "Description of memory keys feature"
+  },
   "clear": "Clear",
   "@clear": {
     "description": "Clear button"

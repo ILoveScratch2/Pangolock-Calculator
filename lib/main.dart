@@ -22,6 +22,7 @@ class _PangoCalcAppState extends State<PangoCalcApp> {
   Locale _locale = const Locale('en');
   ThemeMode _themeMode = ThemeMode.system;
   CalculationMode _calculationMode = CalculationMode.classic;
+  bool _memoryKeysEnabled = false;
 
   void _changeLocale(Locale locale) {
     setState(() {
@@ -38,6 +39,12 @@ class _PangoCalcAppState extends State<PangoCalcApp> {
   void _changeCalculationMode(CalculationMode calculationMode) {
     setState(() {
       _calculationMode = calculationMode;
+    });
+  }
+
+  void _changeMemoryKeysEnabled(bool enabled) {
+    setState(() {
+      _memoryKeysEnabled = enabled;
     });
   }
 
@@ -83,9 +90,11 @@ class _PangoCalcAppState extends State<PangoCalcApp> {
         onLocaleChange: _changeLocale,
         onThemeModeChange: _changeThemeMode,
         onCalculationModeChange: _changeCalculationMode,
+        onMemoryKeysEnabledChange: _changeMemoryKeysEnabled,
         currentLocale: _locale,
         currentThemeMode: _themeMode,
         currentCalculationMode: _calculationMode,
+        memoryKeysEnabled: _memoryKeysEnabled,
       ),
       debugShowCheckedModeBanner: false,
     );
@@ -96,18 +105,22 @@ class CalculatorScreen extends StatefulWidget {
   final Function(Locale) onLocaleChange;
   final Function(ThemeMode) onThemeModeChange;
   final Function(CalculationMode) onCalculationModeChange;
+  final Function(bool) onMemoryKeysEnabledChange;
   final Locale currentLocale;
   final ThemeMode currentThemeMode;
   final CalculationMode currentCalculationMode;
+  final bool memoryKeysEnabled;
 
   const CalculatorScreen({
     super.key,
     required this.onLocaleChange,
     required this.onThemeModeChange,
     required this.onCalculationModeChange,
+    required this.onMemoryKeysEnabledChange,
     required this.currentLocale,
     required this.currentThemeMode,
     required this.currentCalculationMode,
+    required this.memoryKeysEnabled,
   });
 
   @override
@@ -124,6 +137,7 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
   double _operand = 0;
   bool _waitingForOperand = false;
   bool _hasDecimal = false;
+  double _memory = 0;
 
   void _onNumberPressed(String number) {
     setState(() {
@@ -313,6 +327,32 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
     }
   }
 
+  void _onMemoryAdd() {
+    setState(() {
+      _memory += double.parse(_display);
+    });
+  }
+
+  void _onMemorySubtract() {
+    setState(() {
+      _memory -= double.parse(_display);
+    });
+  }
+
+  void _onMemoryRecall() {
+    setState(() {
+      _display = _formatNumber(_memory);
+      _waitingForOperand = true;
+      _hasDecimal = _display.contains('.');
+    });
+  }
+
+  void _onMemoryClear() {
+    setState(() {
+      _memory = 0;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -324,11 +364,30 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
         title: Text(localizations.appTitle),
         backgroundColor: colorScheme.surface,
         foregroundColor: colorScheme.onSurface,
+        actions: [
+          // Memory indicator
+          if (widget.memoryKeysEnabled && _memory != 0)
+            Padding(
+              padding: const EdgeInsets.only(right: 16),
+              child: Center(
+                child: Text(
+                  'M',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    color: colorScheme.onSurface.withValues(alpha: 0.5),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ),
+        ],
       ),
       drawer: _buildDrawer(context, localizations),
       body: _currentMode == CalculatorMode.standard
         ? _buildStandardCalculator(context, theme, colorScheme)
-        : ScientificCalculator(calculationMode: widget.currentCalculationMode),
+        : ScientificCalculator(
+            calculationMode: widget.currentCalculationMode,
+            memoryKeysEnabled: widget.memoryKeysEnabled,
+          ),
     );
   }
 
@@ -377,6 +436,30 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
             padding: const EdgeInsets.all(16),
             child: Column(
               children: [
+                // Memory Keys Row (conditional)
+                if (widget.memoryKeysEnabled)
+                  Expanded(
+                    child: Row(
+                      children: [
+                        _buildButton('MC', _onMemoryClear,
+                          backgroundColor: colorScheme.tertiaryContainer,
+                          textColor: colorScheme.onTertiaryContainer,
+                          fontSize: 14),
+                        _buildButton('MR', _onMemoryRecall,
+                          backgroundColor: colorScheme.tertiaryContainer,
+                          textColor: colorScheme.onTertiaryContainer,
+                          fontSize: 14),
+                        _buildButton('M+', _onMemoryAdd,
+                          backgroundColor: colorScheme.tertiaryContainer,
+                          textColor: colorScheme.onTertiaryContainer,
+                          fontSize: 14),
+                        _buildButton('M-', _onMemorySubtract,
+                          backgroundColor: colorScheme.tertiaryContainer,
+                          textColor: colorScheme.onTertiaryContainer,
+                          fontSize: 14),
+                      ],
+                    ),
+                  ),
                 // Row 1: C, ⌫, ÷
                 Expanded(
                   child: Row(
@@ -512,9 +595,11 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
                     onLocaleChange: widget.onLocaleChange,
                     onThemeModeChange: widget.onThemeModeChange,
                     onCalculationModeChange: widget.onCalculationModeChange,
+                    onMemoryKeysEnabledChange: widget.onMemoryKeysEnabledChange,
                     currentLocale: widget.currentLocale,
                     currentThemeMode: widget.currentThemeMode,
                     currentCalculationMode: widget.currentCalculationMode,
+                    memoryKeysEnabled: widget.memoryKeysEnabled,
                   ),
                 ),
               );
@@ -558,6 +643,7 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
     Color? backgroundColor,
     Color? textColor,
     int flex = 1,
+    double? fontSize,
   }) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
@@ -583,6 +669,7 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
                 style: theme.textTheme.headlineSmall?.copyWith(
                   color: textColor ?? colorScheme.onSurface,
                   fontWeight: FontWeight.w400,
+                  fontSize: fontSize,
                 ),
               ),
             ),

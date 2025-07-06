@@ -6,10 +6,12 @@ import 'expression_evaluator.dart';
 
 class ScientificCalculator extends StatefulWidget {
   final CalculationMode calculationMode;
+  final bool memoryKeysEnabled;
 
   const ScientificCalculator({
     super.key,
     required this.calculationMode,
+    required this.memoryKeysEnabled,
   });
 
   @override
@@ -19,13 +21,14 @@ class ScientificCalculator extends StatefulWidget {
 class _ScientificCalculatorState extends State<ScientificCalculator> {
   String _display = '0';
   String _expression = '';
-  String _logicExpression = ''; // For logic mode
+  String _logicExpression = '';
   double _result = 0;
   String _operation = '';
   double _operand = 0;
   bool _waitingForOperand = false;
   bool _hasDecimal = false;
-  bool _isRadians = true; // true for radians, false for degrees
+  bool _isRadians = true;
+  double _memory = 0;
 
   void _onNumberPressed(String number) {
     setState(() {
@@ -39,7 +42,6 @@ class _ScientificCalculatorState extends State<ScientificCalculator> {
         }
         _hasDecimal = _display.contains('.');
 
-        // Update expression display
         if (_logicExpression.isNotEmpty) {
           String tempExpression = _logicExpression + _display;
           _expression = tempExpression;
@@ -71,7 +73,6 @@ class _ScientificCalculatorState extends State<ScientificCalculator> {
         _hasDecimal = true;
       }
 
-      // Update expression for logic mode
       if (widget.calculationMode == CalculationMode.logic) {
         if (_logicExpression.isNotEmpty) {
           String tempExpression = _logicExpression + _display;
@@ -278,6 +279,32 @@ class _ScientificCalculatorState extends State<ScientificCalculator> {
     }
   }
 
+  void _onMemoryAdd() {
+    setState(() {
+      _memory += double.parse(_display);
+    });
+  }
+
+  void _onMemorySubtract() {
+    setState(() {
+      _memory -= double.parse(_display);
+    });
+  }
+
+  void _onMemoryRecall() {
+    setState(() {
+      _display = _formatNumber(_memory);
+      _waitingForOperand = true;
+      _hasDecimal = _display.contains('.');
+    });
+  }
+
+  void _onMemoryClear() {
+    setState(() {
+      _memory = 0;
+    });
+  }
+
   Widget _buildButton(
     String text,
     VoidCallback onPressed, {
@@ -337,6 +364,21 @@ class _ScientificCalculatorState extends State<ScientificCalculator> {
               mainAxisAlignment: MainAxisAlignment.end,
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
+                // Memory indicator
+                if (widget.memoryKeysEnabled && _memory != 0)
+                  Align(
+                    alignment: Alignment.topRight,
+                    child: Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: Text(
+                        'M',
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          color: colorScheme.onSurface.withValues(alpha: 0.5),
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ),
                 // Expression display
                 if (_expression.isNotEmpty)
                   Text(
@@ -369,6 +411,30 @@ class _ScientificCalculatorState extends State<ScientificCalculator> {
             padding: const EdgeInsets.all(8),
             child: Column(
               children: [
+                // Memory Keys Row (conditional)
+                if (widget.memoryKeysEnabled)
+                  Expanded(
+                    child: Row(
+                      children: [
+                        _buildButton('MC', _onMemoryClear,
+                          backgroundColor: colorScheme.tertiaryContainer,
+                          textColor: colorScheme.onTertiaryContainer,
+                          fontSize: 12),
+                        _buildButton('MR', _onMemoryRecall,
+                          backgroundColor: colorScheme.tertiaryContainer,
+                          textColor: colorScheme.onTertiaryContainer,
+                          fontSize: 12),
+                        _buildButton('M+', _onMemoryAdd,
+                          backgroundColor: colorScheme.tertiaryContainer,
+                          textColor: colorScheme.onTertiaryContainer,
+                          fontSize: 12),
+                        _buildButton('M-', _onMemorySubtract,
+                          backgroundColor: colorScheme.tertiaryContainer,
+                          textColor: colorScheme.onTertiaryContainer,
+                          fontSize: 12),
+                      ],
+                    ),
+                  ),
                 // Row 1: Functions
                 Expanded(
                   child: Row(
