@@ -6,6 +6,7 @@ import 'calculator_mode.dart';
 import 'scientific_calculator.dart';
 import 'settings_page.dart';
 import 'expression_evaluator.dart';
+import 'settings_manager.dart';
 
 void main() {
   runApp(const PangoCalcApp());
@@ -23,33 +24,81 @@ class _PangoCalcAppState extends State<PangoCalcApp> {
   ThemeMode _themeMode = ThemeMode.system;
   CalculationMode _calculationMode = CalculationMode.classic;
   bool _memoryKeysEnabled = false;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSettings();
+  }
+
+  Future<void> _loadSettings() async {
+    try {
+      final settings = await SettingsManager.loadAllSettings();
+      setState(() {
+        _locale = settings['locale'];
+        _themeMode = settings['themeMode'];
+        _calculationMode = settings['calculationMode'];
+        _memoryKeysEnabled = settings['memoryKeysEnabled'];
+        _isLoading = false;
+      });
+    } catch (e) {
+      // If loading fails, use defaults
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
 
   void _changeLocale(Locale locale) {
     setState(() {
       _locale = locale;
     });
+    SettingsManager.saveLocale(locale);
   }
 
   void _changeThemeMode(ThemeMode themeMode) {
     setState(() {
       _themeMode = themeMode;
     });
+    SettingsManager.saveThemeMode(themeMode);
   }
 
   void _changeCalculationMode(CalculationMode calculationMode) {
     setState(() {
       _calculationMode = calculationMode;
     });
+    SettingsManager.saveCalculationMode(calculationMode);
   }
 
   void _changeMemoryKeysEnabled(bool enabled) {
     setState(() {
       _memoryKeysEnabled = enabled;
     });
+    SettingsManager.saveMemoryKeysEnabled(enabled);
   }
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return MaterialApp(
+        title: 'Pangolock Calculator',
+        theme: ThemeData(
+          colorScheme: ColorScheme.fromSeed(
+            seedColor: Colors.blue,
+            brightness: Brightness.light,
+          ),
+          useMaterial3: true,
+        ),
+        home: const Scaffold(
+          body: Center(
+            child: CircularProgressIndicator(),
+          ),
+        ),
+        debugShowCheckedModeBanner: false,
+      );
+    }
+
     return MaterialApp(
       title: 'Pangolock Calculator',
       theme: ThemeData(
