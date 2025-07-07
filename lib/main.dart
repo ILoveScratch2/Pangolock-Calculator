@@ -674,10 +674,10 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
     showAboutDialog(
       context: context,
       applicationName: localizations.appTitle,
-      applicationVersion: '0.2.1',
+      applicationVersion: '0.4.0',
       applicationIcon: const Icon(Icons.calculate, size: 48),
       children: [
-        Text('${localizations.version}: 0.2.1'),
+        Text('${localizations.version}: 0.4.0'),
         const SizedBox(height: 16),
         Text(localizations.appDescription),
         const SizedBox(height: 8),

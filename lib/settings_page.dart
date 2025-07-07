@@ -123,25 +123,51 @@ class SettingsPage extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  RadioListTile<Locale>(
-                    title: const Text('English'),
-                    value: const Locale('en'),
-                    groupValue: currentLocale,
-                    onChanged: (Locale? value) {
-                      if (value != null) {
-                        onLocaleChange(value);
-                      }
-                    },
-                  ),
-                  RadioListTile<Locale>(
-                    title: const Text('中文'),
-                    value: const Locale('zh'),
-                    groupValue: currentLocale,
-                    onChanged: (Locale? value) {
-                      if (value != null) {
-                        onLocaleChange(value);
-                      }
-                    },
+                  ListTile(
+                    leading: const Icon(Icons.language),
+                    title: Text(localizations.language),
+                    subtitle: Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: DropdownButtonFormField<Locale>(
+                        value: currentLocale,
+                        decoration: InputDecoration(
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
+                        ),
+                        items: const [
+                          DropdownMenuItem<Locale>(
+                            value: Locale('en'),
+                            child: Row(
+                              children: [
+                                Text('🇺🇸'),
+                                SizedBox(width: 8),
+                                Text('English'),
+                              ],
+                            ),
+                          ),
+                          DropdownMenuItem<Locale>(
+                            value: Locale('zh'),
+                            child: Row(
+                              children: [
+                                Text('🇨🇳'),
+                                SizedBox(width: 8),
+                                Text('中文'),
+                              ],
+                            ),
+                          ),
+                        ],
+                        onChanged: (Locale? value) {
+                          if (value != null) {
+                            onLocaleChange(value);
+                          }
+                        },
+                      ),
+                    ),
                   ),
                 ],
               ),
